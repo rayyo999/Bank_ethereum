@@ -28,7 +28,7 @@ const accountsInit: Accounts = {
 
 const App: FC = () => {
   const [currentAccount, setCurrentAccount] = useState('');
-  const [isRinkeby, setIsRinkeby] = useState(false);
+  const [isGoerli, setIsGoerli] = useState(false)
   const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false);
   const [userAccounts, dispatch] = useReducer(AccountsReducer, accountsInit);
   const [isMinting, setIsMinting] = useState(false);
@@ -63,34 +63,53 @@ const App: FC = () => {
       console.error(error);
     }
   };
-  const getRinkeby = async () => {
+  // const getRinkeby = async () => {
+  //   try {
+  //     const connect = await ethereum.request({
+  //       method: 'wallet_switchEthereumChain',
+  //       params: [{chainId: '0x4'}],
+  //     });
+  //     //return true if success~~
+  //     if (connect === null) {
+  //       // console.log('switch success');
+  //       setIsSwitchingNetwork(true);
+  //       setIsRinkeby(true);
+  //     } else {
+  //       setIsRinkeby(false);
+  //     }
+  //   } catch (error) {
+  //     setIsRinkeby(false);
+  //     console.error(error);
+  //   }
+  // };
+  const getGoerli = async () => {
     try {
       const connect = await ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{chainId: '0x4'}],
+        params: [{chainId: '0x5'}],
       });
       //return true if success~~
       if (connect === null) {
         // console.log('switch success');
         setIsSwitchingNetwork(true);
-        setIsRinkeby(true);
+        setIsGoerli(true);
       } else {
-        setIsRinkeby(false);
+        setIsGoerli(false);
       }
     } catch (error) {
-      setIsRinkeby(false);
+      setIsGoerli(false);
       console.error(error);
     }
   };
   const checkNetwork = async () => {
     try {
-      if (ethereum.networkVersion !== '4') {
-        setIsRinkeby(false);
+      if (ethereum.networkVersion !== '5') {
+        setIsGoerli(false);
       } else {
-        setIsRinkeby(true);
+        setIsGoerli(true);
       }
     } catch (error) {
-      setIsRinkeby(false);
+      setIsGoerli(false);
       console.error(error);
     }
   };
@@ -375,11 +394,7 @@ const App: FC = () => {
             utils.parseUnits(amount, 18),
             {gasLimit: 300000}
           );
-          // TODO del
-          console.log('depositing....', depositTxn.hash);
           let depositReceipt = await depositTxn.wait();
-          // TODO del
-          console.log('deposit completed', depositReceipt);
           break;
         case 'FD_30':
           dispatch({
@@ -393,11 +408,7 @@ const App: FC = () => {
             utils.parseUnits(amount, 18),
             {gasLimit: 300000}
           );
-          // TODO del
-          console.log('depositing....', depositTxn.hash);
           depositReceipt = await depositTxn.wait();
-          // TODO del
-          console.log('deposit completed', depositReceipt);
           break;
         case 'FD_60':
           dispatch({
@@ -411,11 +422,7 @@ const App: FC = () => {
             utils.parseUnits(amount, 18),
             {gasLimit: 300000}
           );
-          // TODO del
-          console.log('depositing....', depositTxn.hash);
           depositReceipt = await depositTxn.wait();
-          // TODO del
-          console.log('deposit completed', depositReceipt);
           break;
         case 'FD_90':
           dispatch({
@@ -429,11 +436,7 @@ const App: FC = () => {
             utils.parseUnits(amount, 18),
             {gasLimit: 300000}
           );
-          // TODO del
-          console.log('depositing....', depositTxn.hash);
           depositReceipt = await depositTxn.wait();
-          // TODO del
-          console.log('deposit completed', depositReceipt);
           break;
         default:
           throw new Error(`No existing deposit type ${type}`);
@@ -464,11 +467,7 @@ const App: FC = () => {
           let withdrawTxn = await escrowContract.withdraw_DD(
             utils.parseUnits(amount, 18)
           );
-          // TODO del
-          console.log('withdrawing....', withdrawTxn.hash);
           let withdrawReceipt = await withdrawTxn.wait();
-          // TODO del
-          console.log('withdraw completed', withdrawReceipt);
           break;
         case 'FD_30':
           dispatch({
@@ -481,11 +480,7 @@ const App: FC = () => {
           withdrawTxn = await escrowContract.withdraw_FD_30(
             utils.parseUnits(amount, 18)
           );
-          // TODO del
-          console.log('withdrawing....', withdrawTxn.hash);
           withdrawReceipt = await withdrawTxn.wait();
-          // TODO del
-          console.log('withdraw completed', withdrawReceipt);
           break;
         case 'FD_60':
           dispatch({
@@ -498,11 +493,7 @@ const App: FC = () => {
           withdrawTxn = await escrowContract.withdraw_FD_60(
             utils.parseUnits(amount, 18)
           );
-          // TODO del
-          console.log('withdrawing....', withdrawTxn.hash);
           withdrawReceipt = await withdrawTxn.wait();
-          // TODO del
-          console.log('withdraw completed', withdrawReceipt);
           break;
         case 'FD_90':
           dispatch({
@@ -515,11 +506,7 @@ const App: FC = () => {
           withdrawTxn = await escrowContract.withdraw_FD_90(
             utils.parseUnits(amount, 18)
           );
-          // TODO del
-          console.log('withdrawing....', withdrawTxn.hash);
           withdrawReceipt = await withdrawTxn.wait();
-          // TODO del
-          console.log('withdraw completed', withdrawReceipt);
           break;
         default:
           throw new Error(`No existing withdraw type ${type}`);
@@ -605,10 +592,10 @@ const App: FC = () => {
     };
   }, [currentAccount]);
   useEffect(() => {
-    if (isSwitchingNetwork && isRinkeby && currentAccount) {
+    if (isSwitchingNetwork && isGoerli && currentAccount) {
       window.location.reload();
     }
-  }, [isRinkeby, currentAccount]);
+  }, [isGoerli, currentAccount]);
   useEffect(() => {
     escrowContract?.on(
       'Deposit',
@@ -759,7 +746,7 @@ const App: FC = () => {
   return (
     <div className='h-screen bg-slate-800 text-white overflow-hidden'>
       <AnimatePresence exitBeforeEnter>
-        {!(isRinkeby && currentAccount) && (
+        {!(isGoerli && currentAccount) && (
           <motion.div
             className='flex flex-col items-center'
             variants={landingPage}
@@ -779,19 +766,19 @@ const App: FC = () => {
                 Connect Wallet
               </motion.button>
             )}
-            {!isRinkeby && (
+            {!isGoerli && (
               <motion.button
                 className='mt-2 px-4 py-2 rounded-xl bg-gradient-to-br from-orange-900 via-orange-700 to-orange-500'
-                onClick={getRinkeby}
+                onClick={getGoerli}
                 variants={connectBtn}
                 whileHover='hover'
                 whileTap='tap'
               >
-                Switch to Rinkeby
+                Switch to Goerli
               </motion.button>
             )}
             <h3 className='mt-4 text-xl'>
-              connect wallet and switch to rinkeby testnet first ~
+              connect wallet and switch to goerli testnet first ~
             </h3>
             <p>After that</p>
             <div className='text-sm'>
@@ -809,7 +796,7 @@ const App: FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      {isRinkeby && currentAccount && (
+      {isGoerli && currentAccount && (
         <motion.div
           className='h-full flex flex-col pt-4 px-2 bg-slate-800 overflow-y-scroll md:pt-10 md:mx-0'
           variants={bankPage}
