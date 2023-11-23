@@ -1,15 +1,15 @@
-import {FC, useState, useEffect, useReducer} from 'react';
+import { FC, useState, useEffect, useReducer } from 'react'
 // import {Routes, Route, Link, useLocation} from 'react-router-dom';
 // import {ConnectButton} from '@rainbow-me/rainbowkit';
-import {motion, AnimatePresence} from 'framer-motion';
-import {utils, providers, Contract, Event, EventFilter} from 'ethers';
-import Bank from './components/Bank';
-import AccountsReducer from './components/AccountsReducer';
-import {AccountHistory, Accounts, Account} from './components/AccountsReducer';
-import useContract from './components/useContract';
+import { motion, AnimatePresence } from 'framer-motion'
+import { utils, providers, Contract, Event, EventFilter } from 'ethers'
+import Bank from './components/Bank'
+import AccountsReducer from './components/AccountsReducer'
+import { AccountHistory, Accounts, Account } from './components/AccountsReducer'
+import useContract from './components/useContract'
 // import {getContract} from '@wagmi/core';
 // declare var window: any;
-const {ethereum} = window as any;
+const { ethereum } = window as any
 
 const accountInit: Readonly<Account> = {
   amounts: '0',
@@ -17,158 +17,125 @@ const accountInit: Readonly<Account> = {
   history: [],
   isDepositing: false,
   isWithdrawing: false,
-};
+}
 const accountsInit: Accounts = {
   inAccount: accountInit,
   inDD: accountInit,
   inFD_30: accountInit,
   inFD_60: accountInit,
   inFD_90: accountInit,
-};
+}
 
 const App: FC = () => {
-  const [currentAccount, setCurrentAccount] = useState('');
-  const [isGoerli, setIsGoerli] = useState(false)
-  const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false);
-  const [userAccounts, dispatch] = useReducer(AccountsReducer, accountsInit);
-  const [isMinting, setIsMinting] = useState(false);
-  const {tokenContract, escrowContract} = useContract();
+  const [currentAccount, setCurrentAccount] = useState('')
+  const [isSepolia, setIsSepolia] = useState(false)
+  const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false)
+  const [userAccounts, dispatch] = useReducer(AccountsReducer, accountsInit)
+  const [isMinting, setIsMinting] = useState(false)
+  const { tokenContract, escrowContract } = useContract()
 
   // const location = useLocation();
 
   const getAccount = async () => {
     try {
-      const accounts = await ethereum.request({method: 'eth_requestAccounts'});
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
       if (accounts.length === 0) {
-        return;
+        return
       }
-      setCurrentAccount(accounts[0]);
+      setCurrentAccount(accounts[0])
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
-  };
+  }
   const checkCurrentAccount = async () => {
     try {
-      const accounts = await ethereum.request({method: 'eth_accounts'});
+      const accounts = await ethereum.request({ method: 'eth_accounts' })
       if (accounts.length === 0) {
         // console.log('no accounts found');
-        return;
+        return
       }
       if (accounts[0] === currentAccount) {
-        checkNetwork();
-        return;
+        checkNetwork()
+        return
       }
-      setCurrentAccount(accounts[0]);
+      setCurrentAccount(accounts[0])
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
-  };
-  // const getRinkeby = async () => {
-  //   try {
-  //     const connect = await ethereum.request({
-  //       method: 'wallet_switchEthereumChain',
-  //       params: [{chainId: '0x4'}],
-  //     });
-  //     //return true if success~~
-  //     if (connect === null) {
-  //       // console.log('switch success');
-  //       setIsSwitchingNetwork(true);
-  //       setIsRinkeby(true);
-  //     } else {
-  //       setIsRinkeby(false);
-  //     }
-  //   } catch (error) {
-  //     setIsRinkeby(false);
-  //     console.error(error);
-  //   }
-  // };
-  const getGoerli = async () => {
+  }
+  const getSepolia = async () => {
     try {
       const connect = await ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{chainId: '0x5'}],
-      });
+        params: [{ chainId: '0xaa36a7' }],
+      })
       //return true if success~~
       if (connect === null) {
         // console.log('switch success');
-        setIsSwitchingNetwork(true);
-        setIsGoerli(true);
+        setIsSwitchingNetwork(true)
+        setIsSepolia(true)
       } else {
-        setIsGoerli(false);
+        setIsSepolia(false)
       }
     } catch (error) {
-      setIsGoerli(false);
-      console.error(error);
+      setIsSepolia(false)
+      console.error(error)
     }
-  };
+  }
   const checkNetwork = async () => {
     try {
-      if (ethereum.networkVersion !== '5') {
-        setIsGoerli(false);
+      if (ethereum.networkVersion !== '11155111') {
+        setIsSepolia(false)
       } else {
-        setIsGoerli(true);
+        setIsSepolia(true)
       }
     } catch (error) {
-      setIsGoerli(false);
-      console.error(error);
+      setIsSepolia(false)
+      console.error(error)
     }
-  };
+  }
   const mintFreeToken = async () => {
     try {
-      setIsMinting(true);
-      const mintTxn = await tokenContract?.freeToMint();
+      setIsMinting(true)
+      const mintTxn = await tokenContract?.freeToMint()
       // console.log('minting...', mintTxn.hash);
-      const receipt = await mintTxn.wait();
+      const receipt = await mintTxn.wait()
       // console.log('minted!!', receipt);
       // updateBalance(currentAccount, 'Mint', null, 0);
-      updateBalance(currentAccount);
+      updateBalance(currentAccount)
     } catch (error) {
-      setIsMinting(false);
-      console.error(error);
+      setIsMinting(false)
+      console.error(error)
     }
-  };
+  }
   const getUserBalance = async (accountAddress: string) => {
     try {
       if (!tokenContract || !escrowContract) {
-        return;
+        return
       }
-      let balance_account = await tokenContract.balanceOf(accountAddress);
-      let balance_DD = await escrowContract.depositsOf_DD();
-      let balance_FD_30 = await escrowContract.depositsOf_FD_30();
-      let balance_FD_60 = await escrowContract.depositsOf_FD_60();
-      let balance_FD_90 = await escrowContract.depositsOf_FD_90();
-      balance_account = utils.formatUnits(balance_account, 18);
-      balance_DD = utils.formatUnits(balance_DD, 18);
-      balance_FD_30 = utils.formatUnits(balance_FD_30, 18);
-      balance_FD_60 = utils.formatUnits(balance_FD_60, 18);
-      balance_FD_90 = utils.formatUnits(balance_FD_90, 18);
-      let createTime_DD = await escrowContract.createTime_DD();
-      let createTime_FD_30 = await escrowContract.createTime_FD_30();
-      let createTime_FD_60 = await escrowContract.createTime_FD_60();
-      let createTime_FD_90 = await escrowContract.createTime_FD_90();
-      const depositFilter = escrowContract.filters.Deposit(accountAddress);
-      const withdrawFilter = escrowContract.filters.Withdraw(accountAddress);
-      const bonusFilter = escrowContract.filters.GiveBonus(accountAddress);
-      const depositEvents = await escrowContract.queryFilter(
-        depositFilter,
-        0,
-        'latest'
-      );
-      const withdrawEvents = await escrowContract.queryFilter(
-        withdrawFilter,
-        0,
-        'latest'
-      );
-      const bonusEvents = await escrowContract.queryFilter(
-        bonusFilter,
-        0,
-        'latest'
-      );
-      const allEvents = depositEvents
-        .concat(withdrawEvents, bonusEvents)
-        .sort((a, b) => {
-          return b.blockNumber - a.blockNumber;
-        });
+      let balance_account = await tokenContract.balanceOf(accountAddress)
+      let balance_DD = await escrowContract.depositsOf_DD()
+      let balance_FD_30 = await escrowContract.depositsOf_FD_30()
+      let balance_FD_60 = await escrowContract.depositsOf_FD_60()
+      let balance_FD_90 = await escrowContract.depositsOf_FD_90()
+      balance_account = utils.formatUnits(balance_account, 18)
+      balance_DD = utils.formatUnits(balance_DD, 18)
+      balance_FD_30 = utils.formatUnits(balance_FD_30, 18)
+      balance_FD_60 = utils.formatUnits(balance_FD_60, 18)
+      balance_FD_90 = utils.formatUnits(balance_FD_90, 18)
+      let createTime_DD = await escrowContract.createTime_DD()
+      let createTime_FD_30 = await escrowContract.createTime_FD_30()
+      let createTime_FD_60 = await escrowContract.createTime_FD_60()
+      let createTime_FD_90 = await escrowContract.createTime_FD_90()
+      const depositFilter = escrowContract.filters.Deposit(accountAddress)
+      const withdrawFilter = escrowContract.filters.Withdraw(accountAddress)
+      const bonusFilter = escrowContract.filters.GiveBonus(accountAddress)
+      const depositEvents = await escrowContract.queryFilter(depositFilter, 0, 'latest')
+      const withdrawEvents = await escrowContract.queryFilter(withdrawFilter, 0, 'latest')
+      const bonusEvents = await escrowContract.queryFilter(bonusFilter, 0, 'latest')
+      const allEvents = depositEvents.concat(withdrawEvents, bonusEvents).sort((a, b) => {
+        return b.blockNumber - a.blockNumber
+      })
       const histories: Accounts = {
         inAccount: {
           ...accountInit,
@@ -198,73 +165,67 @@ const App: FC = () => {
           createTime: createTime_FD_90.toNumber(),
           history: [],
         },
-      };
+      }
       for (const event of allEvents) {
-        const block = await event.getBlock();
-        const data = transformEvent(event, block);
+        const block = await event.getBlock()
+        const data = transformEvent(event, block)
         switch (event.args?.[2]) {
           case 1:
-            histories.inDD.history.push(data);
-            break;
+            histories.inDD.history.push(data)
+            break
           case 2:
-            histories.inFD_30.history.push(data);
-            break;
+            histories.inFD_30.history.push(data)
+            break
           case 3:
-            histories.inFD_60.history.push(data);
-            break;
+            histories.inFD_60.history.push(data)
+            break
           case 4:
-            histories.inFD_90.history.push(data);
-            break;
+            histories.inFD_90.history.push(data)
+            break
           default:
-            throw new Error(`event type error : ${event.args?.[2]} no found`);
+            throw new Error(`event type error : ${event.args?.[2]} no found`)
         }
       }
-      dispatch({type: 'setAll', payload: histories});
+      dispatch({ type: 'setAll', payload: histories })
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
-  };
-  const transformEvent = (
-    event: Event,
-    block: providers.Block
-  ): AccountHistory => {
-    const time = transformTime(block.timestamp, 0);
+  }
+  const transformEvent = (event: Event, block: providers.Block): AccountHistory => {
+    const time = transformTime(block.timestamp, 0)
     const data: AccountHistory = {
       txnHash: event.transactionHash,
       time: time,
       method: event.event ?? 'error',
       amount: utils.formatUnits(event.args?.[1], 18),
-    };
-    return data;
-  };
+    }
+    return data
+  }
   const transformTime = (time: number, add: number): string => {
     // const time = new Date(block.timestamp * 1000);
     // const time = new Date(block.timestamp * 1000).toLocaleString('en-US', {
     //   timeZone: 'Asia/Taipei',
     // });
-    const timeString = new Date((time + add * 24 * 3600) * 1000).toLocaleString(
-      'en-US',
-      {
-        timeZone: 'Asia/Taipei',
-      }
-    );
-    return timeString;
-  };
+    const timeString = new Date((time + add * 24 * 3600) * 1000).toLocaleString('en-US', {
+      timeZone: 'Asia/Taipei',
+    })
+    return timeString
+  }
   const updateBalance = async (accountAddress: string) => {
     try {
-      let balance_account = await tokenContract?.balanceOf(accountAddress);
-      balance_account = utils.formatUnits(balance_account, 18);
+      let balance_account = await tokenContract?.balanceOf(accountAddress)
+      balance_account = utils.formatUnits(balance_account, 18)
       dispatch({
         type: 'balance_account',
         payload: {
           ...userAccounts,
-          inAccount: {...userAccounts.inAccount, amounts: balance_account},
+          inAccount: { ...userAccounts.inAccount, amounts: balance_account },
         },
-      });
+      })
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
-  };
+  }
   // const updateBalance = async (
   //   accountAddress: string
   //   method: string,
@@ -369,17 +330,15 @@ const App: FC = () => {
   const deposit = async (type: string, amount: string) => {
     try {
       if (!escrowContract) {
-        return;
+        return
       }
       if (amount === '' || amount === '0') {
-        alert(' you can not deposit nothing');
-        return;
+        alert(' you can not deposit nothing')
+        return
       }
       if (Number(amount) > Number(userAccounts.inAccount.amounts)) {
-        alert(
-          ' you have no enough money to deposit !  Feel free to mint Token~~'
-        );
-        return;
+        alert(' you have no enough money to deposit !  Feel free to mint Token~~')
+        return
       }
       switch (type) {
         case 'DD':
@@ -387,73 +346,69 @@ const App: FC = () => {
             type: 'depositing_DD',
             payload: {
               ...userAccounts,
-              inDD: {...userAccounts.inDD, isDepositing: true},
+              inDD: { ...userAccounts.inDD, isDepositing: true },
             },
-          });
-          let depositTxn = await escrowContract.deposit_DD(
-            utils.parseUnits(amount, 18),
-            {gasLimit: 300000}
-          );
-          let depositReceipt = await depositTxn.wait();
-          break;
+          })
+          let depositTxn = await escrowContract.deposit_DD(utils.parseUnits(amount, 18), {
+            gasLimit: 300000,
+          })
+          let depositReceipt = await depositTxn.wait()
+          break
         case 'FD_30':
           dispatch({
             type: 'depositing_FD_30',
             payload: {
               ...userAccounts,
-              inFD_30: {...userAccounts.inFD_30, isDepositing: true},
+              inFD_30: { ...userAccounts.inFD_30, isDepositing: true },
             },
-          });
-          depositTxn = await escrowContract.deposit_FD_30(
-            utils.parseUnits(amount, 18),
-            {gasLimit: 300000}
-          );
-          depositReceipt = await depositTxn.wait();
-          break;
+          })
+          depositTxn = await escrowContract.deposit_FD_30(utils.parseUnits(amount, 18), {
+            gasLimit: 300000,
+          })
+          depositReceipt = await depositTxn.wait()
+          break
         case 'FD_60':
           dispatch({
             type: 'depositing_FD_60',
             payload: {
               ...userAccounts,
-              inFD_60: {...userAccounts.inFD_60, isDepositing: true},
+              inFD_60: { ...userAccounts.inFD_60, isDepositing: true },
             },
-          });
-          depositTxn = await escrowContract.deposit_FD_60(
-            utils.parseUnits(amount, 18),
-            {gasLimit: 300000}
-          );
-          depositReceipt = await depositTxn.wait();
-          break;
+          })
+          depositTxn = await escrowContract.deposit_FD_60(utils.parseUnits(amount, 18), {
+            gasLimit: 300000,
+          })
+          depositReceipt = await depositTxn.wait()
+          break
         case 'FD_90':
           dispatch({
             type: 'depositing_FD_90',
             payload: {
               ...userAccounts,
-              inFD_90: {...userAccounts.inFD_90, isDepositing: true},
+              inFD_90: { ...userAccounts.inFD_90, isDepositing: true },
             },
-          });
-          depositTxn = await escrowContract.deposit_FD_90(
-            utils.parseUnits(amount, 18),
-            {gasLimit: 300000}
-          );
-          depositReceipt = await depositTxn.wait();
-          break;
+          })
+          depositTxn = await escrowContract.deposit_FD_90(utils.parseUnits(amount, 18), {
+            gasLimit: 300000,
+          })
+          depositReceipt = await depositTxn.wait()
+          break
         default:
-          throw new Error(`No existing deposit type ${type}`);
+          throw new Error(`No existing deposit type ${type}`)
       }
     } catch (error) {
-      setDepositingsToFalse();
-      console.error(error);
+      setDepositingsToFalse()
+      console.error(error)
     }
-  };
+  }
   const withdraw = async (type: string, amount: string) => {
     try {
       if (!escrowContract) {
-        return;
+        return
       }
       if (amount === '' || amount === '0') {
-        alert(' you can not withdraw nothing');
-        return;
+        alert(' you can not withdraw nothing')
+        return
       }
       switch (type) {
         case 'DD':
@@ -461,165 +416,151 @@ const App: FC = () => {
             type: 'withdrawing_DD',
             payload: {
               ...userAccounts,
-              inDD: {...userAccounts.inDD, isWithdrawing: true},
+              inDD: { ...userAccounts.inDD, isWithdrawing: true },
             },
-          });
-          let withdrawTxn = await escrowContract.withdraw_DD(
-            utils.parseUnits(amount, 18)
-          );
-          let withdrawReceipt = await withdrawTxn.wait();
-          break;
+          })
+          let withdrawTxn = await escrowContract.withdraw_DD(utils.parseUnits(amount, 18))
+          let withdrawReceipt = await withdrawTxn.wait()
+          break
         case 'FD_30':
           dispatch({
             type: 'withdrawing_FD_30',
             payload: {
               ...userAccounts,
-              inFD_30: {...userAccounts.inFD_30, isWithdrawing: true},
+              inFD_30: { ...userAccounts.inFD_30, isWithdrawing: true },
             },
-          });
-          withdrawTxn = await escrowContract.withdraw_FD_30(
-            utils.parseUnits(amount, 18)
-          );
-          withdrawReceipt = await withdrawTxn.wait();
-          break;
+          })
+          withdrawTxn = await escrowContract.withdraw_FD_30(utils.parseUnits(amount, 18))
+          withdrawReceipt = await withdrawTxn.wait()
+          break
         case 'FD_60':
           dispatch({
             type: 'withdrawing_DD',
             payload: {
               ...userAccounts,
-              inFD_60: {...userAccounts.inFD_60, isWithdrawing: true},
+              inFD_60: { ...userAccounts.inFD_60, isWithdrawing: true },
             },
-          });
-          withdrawTxn = await escrowContract.withdraw_FD_60(
-            utils.parseUnits(amount, 18)
-          );
-          withdrawReceipt = await withdrawTxn.wait();
-          break;
+          })
+          withdrawTxn = await escrowContract.withdraw_FD_60(utils.parseUnits(amount, 18))
+          withdrawReceipt = await withdrawTxn.wait()
+          break
         case 'FD_90':
           dispatch({
             type: 'withdrawing_DD',
             payload: {
               ...userAccounts,
-              inFD_90: {...userAccounts.inFD_90, isWithdrawing: true},
+              inFD_90: { ...userAccounts.inFD_90, isWithdrawing: true },
             },
-          });
-          withdrawTxn = await escrowContract.withdraw_FD_90(
-            utils.parseUnits(amount, 18)
-          );
-          withdrawReceipt = await withdrawTxn.wait();
-          break;
+          })
+          withdrawTxn = await escrowContract.withdraw_FD_90(utils.parseUnits(amount, 18))
+          withdrawReceipt = await withdrawTxn.wait()
+          break
         default:
-          throw new Error(`No existing withdraw type ${type}`);
+          throw new Error(`No existing withdraw type ${type}`)
       }
     } catch (error: any) {
-      setWithdrawingsToFalse();
-      console.error(error);
+      setWithdrawingsToFalse()
+      console.error(error)
       if (error.code === 'UNSUPPORTED_OPERATION') {
-        alert('not available withdrawTime or invalid input value~~');
+        alert('not available withdrawTime or invalid input value~~')
       } else {
-        alert(error.error.message);
+        alert(error.error.message)
       }
     }
-  };
+  }
   const setDepositingsToFalse = () => {
     dispatch({
       type: 'depositing_DD',
       payload: {
         ...userAccounts,
-        inDD: {...userAccounts.inDD, isDepositing: false},
+        inDD: { ...userAccounts.inDD, isDepositing: false },
       },
-    });
+    })
     dispatch({
       type: 'depositing_FD_30',
       payload: {
         ...userAccounts,
-        inFD_30: {...userAccounts.inFD_30, isDepositing: false},
+        inFD_30: { ...userAccounts.inFD_30, isDepositing: false },
       },
-    });
+    })
     dispatch({
       type: 'depositing_FD_60',
       payload: {
         ...userAccounts,
-        inFD_60: {...userAccounts.inFD_60, isDepositing: false},
+        inFD_60: { ...userAccounts.inFD_60, isDepositing: false },
       },
-    });
+    })
     dispatch({
       type: 'depositing_FD_90',
       payload: {
         ...userAccounts,
-        inFD_90: {...userAccounts.inFD_90, isDepositing: false},
+        inFD_90: { ...userAccounts.inFD_90, isDepositing: false },
       },
-    });
-  };
+    })
+  }
   const setWithdrawingsToFalse = () => {
     dispatch({
       type: 'withdrawing_DD',
       payload: {
         ...userAccounts,
-        inDD: {...userAccounts.inDD, isWithdrawing: false},
+        inDD: { ...userAccounts.inDD, isWithdrawing: false },
       },
-    });
+    })
     dispatch({
       type: 'withdrawing_FD_30',
       payload: {
         ...userAccounts,
-        inFD_30: {...userAccounts.inFD_30, isWithdrawing: false},
+        inFD_30: { ...userAccounts.inFD_30, isWithdrawing: false },
       },
-    });
+    })
     dispatch({
       type: 'withdrawing_FD_60',
       payload: {
         ...userAccounts,
-        inFD_60: {...userAccounts.inFD_60, isWithdrawing: false},
+        inFD_60: { ...userAccounts.inFD_60, isWithdrawing: false },
       },
-    });
+    })
     dispatch({
       type: 'withdrawing_FD_90',
       payload: {
         ...userAccounts,
-        inFD_90: {...userAccounts.inFD_90, isWithdrawing: false},
+        inFD_90: { ...userAccounts.inFD_90, isWithdrawing: false },
       },
-    });
-  };
+    })
+  }
 
   useEffect(() => {
     const check = setInterval(() => {
-      checkCurrentAccount();
-    }, 3000);
-    getUserBalance(currentAccount);
+      checkCurrentAccount()
+    }, 3000)
+    getUserBalance(currentAccount)
     return () => {
-      clearInterval(check);
-    };
-  }, [currentAccount]);
-  useEffect(() => {
-    if (isSwitchingNetwork && isGoerli && currentAccount) {
-      window.location.reload();
+      clearInterval(check)
     }
-  }, [isGoerli, currentAccount]);
+  }, [currentAccount])
   useEffect(() => {
-    escrowContract?.on(
-      'Deposit',
-      (accountAddress: string, amount, accountType: number) => {
-        getUserBalance(accountAddress);
-      }
-    );
-    escrowContract?.on(
-      'Withdraw',
-      (accountAddress: string, amount, accountType: number) => {
-        getUserBalance(accountAddress);
-      }
-    );
+    if (isSwitchingNetwork && isSepolia && currentAccount) {
+      window.location.reload()
+    }
+  }, [isSepolia, currentAccount])
+  useEffect(() => {
+    escrowContract?.on('Deposit', (accountAddress: string, amount, accountType: number) => {
+      getUserBalance(accountAddress)
+    })
+    escrowContract?.on('Withdraw', (accountAddress: string, amount, accountType: number) => {
+      getUserBalance(accountAddress)
+    })
     return () => {
       escrowContract?.off('Deposit', () => {
-        console.log('stopListeningD');
-      });
+        console.log('stopListeningD')
+      })
       escrowContract?.off('Withdraw', () => {
-        console.log('stopListeningW');
-      });
-    };
+        console.log('stopListeningW')
+      })
+    }
     // }, [escrowContract]);
     // }, [isRinkeby]);
-  }, [currentAccount]);
+  }, [currentAccount])
 
   // useEffect(() => {
   //   escrowContract?.on(
@@ -729,24 +670,24 @@ const App: FC = () => {
 
   useEffect(() => {
     if (isMinting) {
-      setIsMinting(false);
+      setIsMinting(false)
     }
-  }, [userAccounts.inAccount.amounts]);
+  }, [userAccounts.inAccount.amounts])
   useEffect(() => {
-    const provider = new providers.Web3Provider(ethereum);
+    const provider = new providers.Web3Provider(ethereum)
     provider.on('network', (newNetwork, oldNetwork) => {
       if (oldNetwork) {
-        window.location.reload();
+        window.location.reload()
       }
-    });
+    })
     return () => {
-      provider.off('network');
-    };
-  }, []);
+      provider.off('network')
+    }
+  }, [])
   return (
     <div className='h-screen bg-slate-800 text-white overflow-hidden'>
       <AnimatePresence exitBeforeEnter>
-        {!(isGoerli && currentAccount) && (
+        {!(isSepolia && currentAccount) && (
           <motion.div
             className='flex flex-col items-center'
             variants={landingPage}
@@ -766,28 +707,22 @@ const App: FC = () => {
                 Connect Wallet
               </motion.button>
             )}
-            {!isGoerli && (
+            {!isSepolia && (
               <motion.button
                 className='mt-2 px-4 py-2 rounded-xl bg-gradient-to-br from-orange-900 via-orange-700 to-orange-500'
-                onClick={getGoerli}
+                onClick={getSepolia}
                 variants={connectBtn}
                 whileHover='hover'
                 whileTap='tap'
               >
-                Switch to Goerli
+                Switch to Sepolia
               </motion.button>
             )}
-            <h3 className='mt-4 text-xl'>
-              connect wallet and switch to goerli testnet first ~
-            </h3>
+            <h3 className='mt-4 text-xl'>connect wallet and switch to sepolia testnet first ~</h3>
             <p>After that</p>
             <div className='text-sm'>
-              <p>
-                the page will refresh automatically, and you'll be access to the
-                next page !
-              </p>
-              Feel free to mess around it, and don't worry switching between
-              different accounts,
+              <p>the page will refresh automatically, and you'll be access to the next page !</p>
+              Feel free to mess around it, and don't worry switching between different accounts,
               <p>
                 the info will update after a few seconds.
                 <span className='pl-4'> Have fun!</span>
@@ -796,7 +731,7 @@ const App: FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      {isGoerli && currentAccount && (
+      {isSepolia && currentAccount && (
         <motion.div
           className='h-full flex flex-col pt-4 px-2 bg-slate-800 overflow-y-scroll md:pt-10 md:mx-0'
           variants={bankPage}
@@ -805,10 +740,7 @@ const App: FC = () => {
           exit='exit'
         >
           <div className='basis-1/6 self-center flex space-x-10 text-center'>
-            <div
-              style={{perspective: 200}}
-              className='flex flex-col items-center'
-            >
+            <div style={{ perspective: 200 }} className='flex flex-col items-center'>
               <p>get 10 tokens for free first</p>
               <motion.svg
                 xmlns='http://www.w3.org/2000/svg'
@@ -832,9 +764,7 @@ const App: FC = () => {
                   {currentAccount.slice(0, 4)}...{currentAccount.slice(-4)}
                 </span>
               </div>
-              <div className='pt-4 select-all'>
-                {userAccounts.inAccount.amounts}
-              </div>
+              <div className='pt-4 select-all'>{userAccounts.inAccount.amounts}</div>
             </div>
           </div>
           <div className='basis-5/6 md:flex'>
@@ -870,9 +800,9 @@ const App: FC = () => {
         </motion.div>
       )}
     </div>
-  );
-};
-export default App;
+  )
+}
+export default App
 
 const landingPage = {
   init: {
@@ -891,7 +821,7 @@ const landingPage = {
     scale: 0.01,
     opacity: 0,
   },
-};
+}
 const bankPage = {
   init: {
     scale: 5,
@@ -909,7 +839,7 @@ const bankPage = {
   exit: {
     scale: 3,
   },
-};
+}
 const connectBtn = {
   hover: {
     rotateZ: [0, 10, -10, 0],
@@ -921,18 +851,18 @@ const connectBtn = {
       duration: 0.05,
     },
   },
-};
+}
 const coinAnimate = {
   animate: {
     rotateY: [0, 360, 0],
     originX: 1.75,
-    transition: {duration: 3, repeat: Infinity, repeatDelay: 0.4},
+    transition: { duration: 3, repeat: Infinity, repeatDelay: 0.4 },
   },
   hover: {
     scale: 1.1,
     originX: 1.5,
   },
-};
+}
 
 {
   /* <ConnectButton /> */

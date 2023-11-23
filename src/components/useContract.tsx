@@ -3,8 +3,8 @@ import {providers, Contract} from 'ethers';
 import tokenContractABI from '../contract/token.json';
 import escrowContractABI from '../contract/escrow.json';
 
-const tokenContractAddress = '0xa6d56bcc5A425a58a69bBFE53D61f945f33284C1'
-const escrowContractAddress = '0x2912a67580b901A5D45AA69A1D8ad403329f9f52'
+const tokenContractAddress = '0x1967bf604F61f438C7c60dB3aEfBf0993b993C76'
+const escrowContractAddress = '0xBDd2d0A69c40de6Cf1b1a1620F1fDB184317D753'
 const {ethereum} = window as any;
 const provider = new providers.Web3Provider(ethereum);
 const useContract = () => {
